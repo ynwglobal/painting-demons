@@ -36,10 +36,31 @@ export function ArchivedPage({ content }: { content: ArchivedContent }) {
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    root.innerHTML = content.html;
+
+    // Get current basepath, e.g. "/painting-demons" (or "" if at root domain)
+    const base = (router.basepath || "").replace(/\/$/, "");
+
+    // 1. Rewrite hardcoded links in the archived HTML so hover and right-click have the proper base URL
+    let html = content.html;
+    if (base) {
+      html = html
+        .replace(/href=(["'])\/products\//g, `href=$1${base}/products/`)
+        .replace(/href=(["'])\/pages\//g, `href=$1${base}/pages/`);
+    }
+    root.innerHTML = html;
+
+    // 2. Rewrite script templates so dynamic links (e.g. masks loaded from Shopify) also get the proper base URL
     for (const code of content.scripts) {
+      let scriptCode = code;
+      if (base) {
+        scriptCode = scriptCode
+          .replaceAll('href="/products/', `href="${base}/products/`)
+          .replaceAll("href='/products/", `href='${base}/products/`)
+          .replaceAll('href="/pages/', `href="${base}/pages/`)
+          .replaceAll("href='/pages/", `href='${base}/pages/`);
+      }
       const s = document.createElement("script");
-      s.textContent = code;
+      s.textContent = scriptCode;
       root.appendChild(s);
     }
 
