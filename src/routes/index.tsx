@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteShell } from "@/components/SiteShell";
 import { ArchivedPage, loadArchived } from "@/components/ArchivedPage";
+import { DropAnnouncement } from "@/components/DropAnnouncement";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,6 +22,7 @@ function Index() {
   const content = Route.useLoaderData();
   return (
     <SiteShell raw>
+      <DropAnnouncement />
       <ArchivedPage content={content} />
     </SiteShell>
   );
