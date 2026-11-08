@@ -8,12 +8,10 @@ process.env.PAGES_BASE = process.env.PAGES_BASE || "/painting-demons/";
 
 execSync("bunx vite build", { stdio: "inherit", env: process.env });
 
-const publicDir = path.resolve(".output", "public");
+// Setup SPA fallback and pre-create known route index.html files
+execSync("bun run scripts/setup-spa-routes.js", { stdio: "inherit" });
 
-// SPA fallback for deep links
-fs.copyFileSync(path.join(publicDir, "index.html"), path.join(publicDir, "404.html"));
-fs.writeFileSync(path.join(publicDir, ".nojekyll"), "");
-console.log("✓ Created 404.html and .nojekyll in .output/public");
+const publicDir = path.resolve(".output", "public");
 
 // Deploy to gh-pages branch
 console.log("🚀 Deploying to gh-pages branch...");
@@ -25,7 +23,7 @@ if (fs.existsSync(gitDir)) {
 execSync("git init", { cwd: publicDir, stdio: "inherit" });
 execSync("git checkout -b gh-pages", { cwd: publicDir, stdio: "inherit" });
 execSync("git add -A", { cwd: publicDir, stdio: "inherit" });
-execSync('git commit -m "Deploy to GitHub Pages"', { cwd: publicDir, stdio: "inherit" });
+execSync('git commit -m "Deploy to GitHub Pages: responsive optimizations and product route fixes"', { cwd: publicDir, stdio: "inherit" });
 execSync("git remote add origin https://github.com/ynwglobal/painting-demons.git", { cwd: publicDir, stdio: "inherit" });
 execSync("git push origin gh-pages --force", { cwd: publicDir, stdio: "inherit" });
 

@@ -9,5 +9,12 @@ export const asset = {
   sigilsCss: CDN + "veil-sigils.css?v=34699824076739333791790206086",
   sigilsJs: CDN + "veil-sigils.js?v=149943373320801718141790206086",
 };
-export const money = (amount: string, currency: string) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(Number(amount));
+export const money = (amount: string | number, currency = "USD") => {
+  const code = typeof currency === "string" && currency.length === 3 ? currency.toUpperCase() : "USD";
+  const num = Number(amount) || 0;
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: code }).format(num);
+  } catch {
+    return `$${num.toFixed(2)}`;
+  }
+};

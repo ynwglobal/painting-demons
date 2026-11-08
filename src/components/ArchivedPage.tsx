@@ -42,17 +42,51 @@ export function ArchivedPage({ content }: { content: ArchivedContent }) {
       s.textContent = code;
       root.appendChild(s);
     }
-    // Keep internal links inside the app (works with a GitHub Pages base path too).
+
+    const base = (router.basepath || "").replace(/\/$/, "");
+
+    // Rewrite internal <a> tags so hover, right-click, and middle-click stay on GitHub Pages base path
+    const syncInternalLinks = () => {
+      if (!base) return;
+      const links = root.querySelectorAll<HTMLAnchorElement>("a[href^='/']");
+      links.forEach((a) => {
+        const h = a.getAttribute("href");
+        if (h && !h.startsWith("//") && !h.startsWith(base)) {
+          a.setAttribute("href", base + h);
+        }
+      });
+    };
+    syncInternalLinks();
+
+    const observer = new MutationObserver(syncInternalLinks);
+    observer.observe(root, { childList: true, subtree: true });
+
+    // Keep internal links inside TanStack Router (works with a GitHub Pages base path too)
     const onClick = (e: MouseEvent) => {
       const a = (e.target as HTMLElement).closest("a");
-      if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || a.target === "_blank") return;
-      const href = a.getAttribute("href");
-      if (!href || !href.startsWith("/") || href.startsWith("//")) return;
+      if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || a.target === "_blank") return;
+      let href = a.getAttribute("href");
+      if (!href) return;
+      if (href.startsWith("#") || href.startsWith("//") || /^https?:\/\//i.test(href) || /^(mailto|tel):/i.test(href)) {
+        return;
+      }
+      if (!href.startsWith("/")) return;
+
       e.preventDefault();
-      router.navigate({ href });
+
+      // Strip basepath so router.navigate receives the app-relative route
+      if (base && href.startsWith(base)) {
+        href = href.slice(base.length) || "/";
+      }
+
+      router.navigate({ to: href });
     };
+
     root.addEventListener("click", onClick);
-    return () => root.removeEventListener("click", onClick);
+    return () => {
+      observer.disconnect();
+      root.removeEventListener("click", onClick);
+    };
   }, [content, router]);
 
   return (

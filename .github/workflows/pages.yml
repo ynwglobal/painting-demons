@@ -25,8 +25,7 @@ jobs:
         run: bunx vite build
       - name: SPA fallback for deep links
         run: |
-          cp .output/public/index.html .output/public/404.html
-          touch .output/public/.nojekyll
+          bun run scripts/setup-spa-routes.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .output/public

@@ -28,7 +28,6 @@ export const Route = createFileRoute("/pages/$handle")({
       ],
     };
   },
-  notFoundComponent: () => <SiteShell><div className="pd-page"><h1>Page not found</h1></div></SiteShell>,
   component: PageView,
 });
 
