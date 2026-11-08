@@ -43,48 +43,63 @@ export function ArchivedPage({ content }: { content: ArchivedContent }) {
       root.appendChild(s);
     }
 
-    const base = (router.basepath || "").replace(/\/$/, "");
-
-    // Rewrite internal <a> tags so hover, right-click, and middle-click stay on GitHub Pages base path
-    const syncInternalLinks = () => {
-      if (!base) return;
-      const links = root.querySelectorAll<HTMLAnchorElement>("a[href^='/']");
-      links.forEach((a) => {
-        const h = a.getAttribute("href");
-        if (h && !h.startsWith("//") && !h.startsWith(base)) {
-          a.setAttribute("href", base + h);
-        }
-      });
-    };
-    syncInternalLinks();
-
-    const observer = new MutationObserver(syncInternalLinks);
-    observer.observe(root, { childList: true, subtree: true });
-
-    // Keep internal links inside TanStack Router (works with a GitHub Pages base path too)
+    // Keep internal links inside TanStack Router without duplicating repository basepath
     const onClick = (e: MouseEvent) => {
       const a = (e.target as HTMLElement).closest("a");
       if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || a.target === "_blank") return;
-      let href = a.getAttribute("href");
-      if (!href) return;
-      if (href.startsWith("#") || href.startsWith("//") || /^https?:\/\//i.test(href) || /^(mailto|tel):/i.test(href)) {
+      const rawHref = a.getAttribute("href");
+      if (!rawHref) return;
+
+      // Ignore external links, anchors, and non-http protocols
+      if (
+        rawHref.startsWith("#") ||
+        rawHref.startsWith("//") ||
+        /^https?:\/\//i.test(rawHref) ||
+        /^(mailto|tel|javascript):/i.test(rawHref)
+      ) {
         return;
       }
-      if (!href.startsWith("/")) return;
 
       e.preventDefault();
 
-      // Strip basepath so router.navigate receives the app-relative route
-      if (base && href.startsWith(base)) {
-        href = href.slice(base.length) || "/";
+      // Normalize: strip any leading /painting-demons (single or repeated) so we have a clean app route
+      let clean = rawHref.replace(/^(?:\/?painting-demons)+/i, "");
+      if (!clean.startsWith("/")) {
+        clean = "/" + clean;
       }
 
-      router.navigate({ to: href });
+      // Route to product page
+      const productMatch = clean.match(/^\/products\/([^/?#]+)/i);
+      if (productMatch) {
+        router.navigate({
+          to: "/products/$handle",
+          params: { handle: productMatch[1] },
+        });
+        return;
+      }
+
+      // Route to content page
+      const pageMatch = clean.match(/^\/pages\/([^/?#]+)/i);
+      if (pageMatch) {
+        router.navigate({
+          to: "/pages/$handle",
+          params: { handle: pageMatch[1] },
+        });
+        return;
+      }
+
+      // Route to home
+      if (clean === "/" || clean === "") {
+        router.navigate({ to: "/" });
+        return;
+      }
+
+      // Any other internal route (e.g. /search)
+      router.navigate({ to: clean });
     };
 
     root.addEventListener("click", onClick);
     return () => {
-      observer.disconnect();
       root.removeEventListener("click", onClick);
     };
   }, [content, router]);
